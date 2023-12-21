@@ -1,5 +1,5 @@
 use lisp_rs::env;
-use lisp_rs::eval;
+use lisp_rs::eval::eval;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use std::cell::RefCell;
@@ -14,10 +14,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let readline = rl.readline(PROMPT);
         match readline {
-            Ok(line) => {
-                let val = eval::eval(&line, &mut env)?;
-                val.show()
-            }
+            Ok(line) => match eval(&line, &mut env) {
+                Ok(result) => result.show(),
+                Err(e) => println!("Error: {}", e),
+            },
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
                 break;
@@ -28,6 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Err(err) => {
                 println!("Error: {:?}", err);
+                break;
             }
         }
     }
