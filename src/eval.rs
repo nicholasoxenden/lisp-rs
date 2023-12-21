@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 fn eval_binary_op(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
     if list.len() != 3 {
-        return Err(format!("Invalid number of arguments for infix operator"));
+        return Err("Invalid number of arguments for infix operator".to_string());
     }
     let operator = list[0].clone();
     let left = eval_obj(&list[1].clone(), env)?;
@@ -31,18 +31,18 @@ fn eval_binary_op(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Obje
             "!=" => Ok(Object::Bool(left_val != right_val)),
             _ => Err(format!("Invalid infix operator: {}", s)),
         },
-        _ => Err(format!("Operator must be a symbol")),
+        _ => Err("Operator must be a symbol".to_string()),
     }
 }
 
 fn eval_define(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
     if list.len() != 3 {
-        return Err(format!("Invalid number of arguments for define"));
+        return Err("Invalid number of arguments for define".to_string());
     }
 
     let sym = match &list[1] {
         Object::Symbol(s) => s.clone(),
-        _ => return Err(format!("Invalid define")),
+        _ => return Err("Invalid define".to_string()),
     };
     let val = eval_obj(&list[2], env)?;
     env.borrow_mut().set(&sym, val);
@@ -51,47 +51,47 @@ fn eval_define(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object,
 
 fn eval_if(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
     if list.len() != 4 {
-        return Err(format!("Invalid number of arguments for if statement"));
+        return Err("Invalid number of arguments for if statement".to_string());
     }
 
     let cond_obj = eval_obj(&list[1], env)?;
     let cond = match cond_obj {
         Object::Bool(b) => b,
-        _ => return Err(format!("Condition must be a boolean")),
+        _ => return Err("Condition must be a boolean".to_string()),
     };
 
-    if cond == true {
-        return eval_obj(&list[2], env);
+    if cond {
+        eval_obj(&list[2], env)
     } else {
-        return eval_obj(&list[3], env);
+        eval_obj(&list[3], env)
     }
 }
 
-fn eval_function_definition(list: &Vec<Object>) -> Result<Object, String> {
+fn eval_function_definition(list: &[Object]) -> Result<Object, String> {
     let params = match &list[1] {
         Object::List(list) => {
             let mut params = Vec::new();
             for param in list {
                 match param {
                     Object::Symbol(s) => params.push(s.clone()),
-                    _ => return Err(format!("Invalid lambda parameter")),
+                    _ => return Err("Invalid lambda parameter".to_string()),
                 }
             }
             params
         }
-        _ => return Err(format!("Invalid lambda")),
+        _ => return Err("Invalid lambda".to_string()),
     };
 
     let body = match &list[2] {
         Object::List(list) => list.clone(),
-        _ => return Err(format!("Invalid lambda")),
+        _ => return Err("Invalid lambda".to_string()),
     };
     Ok(Object::Lambda(params, body))
 }
 
 fn eval_function_call(
     s: &str,
-    list: &Vec<Object>,
+    list: &[Object],
     env: &mut Rc<RefCell<Env>>,
 ) -> Result<Object, String> {
     let lamdba = env.borrow_mut().get(s);
@@ -107,9 +107,9 @@ fn eval_function_call(
                 let val = eval_obj(&list[i + 1], env)?;
                 new_env.borrow_mut().set(param, val);
             }
-            return eval_obj(&Object::List(body), &mut new_env);
+            eval_obj(&Object::List(body), &mut new_env)
         }
-        _ => return Err(format!("Not a lambda: {}", s)),
+        _ => Err(format!("Not a lambda: {}", s)),
     }
 }
 
@@ -125,13 +125,11 @@ fn eval_list(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, S
     let head = &list[0];
     match head {
         Object::Symbol(s) => match s.as_str() {
-            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => {
-                return eval_binary_op(&list, env);
-            }
-            "define" => eval_define(&list, env),
-            "if" => eval_if(&list, env),
-            "lambda" => eval_function_definition(&list),
-            _ => eval_function_call(&s, &list, env),
+            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_op(list, env),
+            "define" => eval_define(list, env),
+            "if" => eval_if(list, env),
+            "lambda" => eval_function_definition(list),
+            _ => eval_function_call(s, list, env),
         },
         _ => {
             let mut new_list = Vec::new();

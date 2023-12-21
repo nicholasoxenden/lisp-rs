@@ -13,4 +13,4 @@ Lisp interpreter in Rust
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-linefeed = "0.6.0"
+rustyline = "13.0.0"

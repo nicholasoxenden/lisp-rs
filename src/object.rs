@@ -10,6 +10,28 @@ pub enum Object {
     List(Vec<Object>),
 }
 
+impl Object {
+    pub fn show(&self) {
+        match self {
+            Object::Void => {}
+            Object::Integer(n) => println!("{}", n),
+            Object::Bool(b) => println!("{}", b),
+            Object::Symbol(s) => println!("{}", s),
+            Object::Lambda(params, body) => {
+                println!("Lambda(");
+                for param in params {
+                    println!("{} ", param);
+                }
+                println!(")");
+                for expr in body {
+                    println!(" {}", expr);
+                }
+            }
+            _ => println!("{}", self),
+        }
+    }
+}
+
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

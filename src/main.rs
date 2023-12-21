@@ -1,46 +1,35 @@
-mod env;
-mod eval;
-mod lexer;
-mod object;
-mod parser;
-
-use linefeed::{Interface, ReadResult};
-use object::Object;
+use lisp_rs::env;
+use lisp_rs::eval;
+use rustyline::error::ReadlineError;
+use rustyline::DefaultEditor;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 const PROMPT: &str = "lisp-rs> ";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let reader = Interface::new(PROMPT).unwrap();
+    let mut rl = DefaultEditor::new()?;
     let mut env = Rc::new(RefCell::new(env::Env::new()));
 
-    reader.set_prompt(format!("{}", PROMPT).as_ref()).unwrap();
-
-    while let ReadResult::Input(input) = reader.read_line().unwrap() {
-        if input.eq("exit") {
-            break;
-        }
-        let val = eval::eval(input.as_ref(), &mut env)?;
-        match val {
-            Object::Void => {}
-            Object::Integer(n) => println!("{}", n),
-            Object::Bool(b) => println!("{}", b),
-            Object::Symbol(s) => println!("{}", s),
-            Object::Lambda(params, body) => {
-                println!("Lambda(");
-                for param in params {
-                    println!("{} ", param);
-                }
-                println!(")");
-                for expr in body {
-                    println!(" {}", expr);
-                }
+    loop {
+        let readline = rl.readline(PROMPT);
+        match readline {
+            Ok(line) => {
+                let val = eval::eval(&line, &mut env)?;
+                val.show()
             }
-            _ => println!("{}", val),
+            Err(ReadlineError::Interrupted) => {
+                println!("CTRL-C");
+                break;
+            }
+            Err(ReadlineError::Eof) => {
+                println!("CTRL-D");
+                break;
+            }
+            Err(err) => {
+                println!("Error: {:?}", err);
+            }
         }
     }
-
-    println!("Good bye");
     Ok(())
 }
